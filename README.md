@@ -29,7 +29,7 @@ Preview the deployment of the application:
 $ pulumi preview
 ```
 
-(Optional) Prepare directory for local pv (refer to name, storageNode and storagePath in `index.ts`):
+(Optional) Prepare directory for local pv (refer to name, localStorage, storageNode and storagePath in `index.ts`):
 ```sh
 # on k8s local pv node
 $ mkdir -p /data/tidb
@@ -56,11 +56,17 @@ $ kubectl port-forward svc/tidb 4000
 
 Connect to tidb:
 
-mysql 5.7:
+without password:
+
+```sh
+$ mysql -h 127.0.0.1 -P 4000 -u root
+```
+
+with password (mysql 5.7):
 ```sh
 $ mysql -h 127.0.0.1 -P 4000 -u root -p
 ```
-mysql 8.0:
+with password (mysql 8.0):
 ```sh
 $ mysql -h 127.0.0.1 -P 4000 -u root -p --default-auth=mysql_native_password
 ```
@@ -81,6 +87,7 @@ $ pulumi destroy --skip-preview
 | imageVersion | Image tag                                             | latest        |
 | storageClass | Type of persistent volume claim                       | local-storage |
 | storageSize  | Size of persistent volume claim                       | 10Gi          |
+| localStorage | Enable local storage                                  | false         |
 | storageNode  | Nodename of local storage pv                          | node1         |
 | storagePath  | Parent path of local storage pv                       | /data         |
 | password     | TiDB password, if not specified, there is no password | pa55w0rd      |

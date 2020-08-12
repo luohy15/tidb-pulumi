@@ -5,7 +5,6 @@ import * as kx from "@pulumi/kubernetesx";
 export class TiDB extends pulumi.ComponentResource {
   /**
    * Allocate new tidb instance
-   * @param name The name of the tidb instance.
    * @param args A bag of arguments to control the tidb instance.
    * @param opts optional resource options.
    */
@@ -27,71 +26,90 @@ export class TiDB extends pulumi.ComponentResource {
       },
       { parent: this }
     );
-    const storageclass = new k8s.storage.v1.StorageClass(
-      args.name,
-      {
-        metadata: {
-          name: args.storageClass,
-        },
-        provisioner: "kubernetes.io/no-provisioner",
-        volumeBindingMode: "WaitForFirstConsumer",
-      },
-      { parent: this }
-    );
-    const pv = new k8s.core.v1.PersistentVolume(
-      args.name,
-      {
-        metadata: {
-          name: args.name,
-          labels: appLabels,
-        },
-        spec: {
-          storageClassName: args.storageClass,
-          capacity: {
-            storage: args.storageSize,
+    if (args.localStorage) {
+      const storageclass = new k8s.storage.v1.StorageClass(
+        args.name,
+        {
+          metadata: {
+            name: args.storageClass,
           },
-          accessModes: ["ReadWriteOnce"],
-          local: {
-            path: `${args.storagePath}/${args.name}`,
-          },
-          nodeAffinity: {
-            required: {
-              nodeSelectorTerms: [
-                {
-                  matchExpressions: [
-                    {
-                      key: "kubernetes.io/hostname",
-                      operator: "In",
-                      values: [args.storageNode],
-                    },
-                  ],
-                },
-              ],
-            },
-          },
+          provisioner: "kubernetes.io/no-provisioner",
+          volumeBindingMode: "WaitForFirstConsumer",
         },
-      },
-      { parent: this }
-    );
-    const pvc = new k8s.core.v1.PersistentVolumeClaim(
-      args.name,
-      {
-        metadata,
-        spec: {
-          accessModes: ["ReadWriteOnce"],
-          storageClassName: args.storageClass,
-          resources: {
-            requests: {
+        { parent: this }
+      );
+      const pv = new k8s.core.v1.PersistentVolume(
+        args.name,
+        {
+          metadata: {
+            name: args.name,
+            labels: appLabels,
+          },
+          spec: {
+            storageClassName: args.storageClass,
+            capacity: {
               storage: args.storageSize,
             },
-          },
-          selector: {
-            matchLabels: appLabels,
+            accessModes: ["ReadWriteOnce"],
+            local: {
+              path: `${args.storagePath}/${args.name}`,
+            },
+            nodeAffinity: {
+              required: {
+                nodeSelectorTerms: [
+                  {
+                    matchExpressions: [
+                      {
+                        key: "kubernetes.io/hostname",
+                        operator: "In",
+                        values: [args.storageNode],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
           },
         },
-      },
-      { parent: this }
-    );
+        { parent: this }
+      );
+      const pvc = new k8s.core.v1.PersistentVolumeClaim(
+        args.name,
+        {
+          metadata,
+          spec: {
+            accessModes: ["ReadWriteOnce"],
+            storageClassName: args.storageClass,
+            resources: {
+              requests: {
+                storage: args.storageSize,
+              },
+            },
+            selector: {
+              matchLabels: appLabels,
+            },
+          },
+        },
+        { parent: this }
+      );
+    } else {
+      const pvc = new k8s.core.v1.PersistentVolumeClaim(
+        args.name,
+        {
+          metadata,
+          spec: {
+            accessModes: ["ReadWriteOnce"],
+            storageClassName: args.storageClass,
+            resources: {
+              requests: {
+                storage: args.storageSize,
+              },
+            }
+          },
+        },
+        { parent: this }
+      )
+    }
     const deployment = new k8s.apps.v1.Deployment(
       args.name,
       {
@@ -233,6 +251,7 @@ export interface TiDBArgs {
   name: string;
   namespace: string;
   imageVersion: string;
+  localStorage: boolean;
   storageClass: string;
   storageSize: string;
   storageNode: string;

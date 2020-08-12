@@ -6,6 +6,7 @@ let tidb = new TiDB({
     imageVersion: "latest",
     storageClass: "local-storage",
     storageSize: "10Gi",
+    localStorage: false,
     storageNode: "node1",
     storagePath: "/data",
     password: "pa55w0rd",
